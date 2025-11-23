@@ -1,20 +1,22 @@
 package com.example.myapplication
 
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.View
 import android.widget.Adapter
 import android.widget.ArrayAdapter
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    private val todos = mutableListOf<String>()
-    private lateinit var adapter: ArrayAdapter<String>
+    private lateinit var todoAdapter: TodoAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,33 +29,49 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, todos)
-        binding.lvToDo.adapter = adapter
+        setupRecyclerView()
+        setupClickListeners()
+    }
 
-        binding.btnAdd.setOnClickListener {
-            addToDo()
+    private fun setupRecyclerView() {
+       todoAdapter = TodoAdapter(mutableListOf())
+
+        binding.rvToDo.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = todoAdapter
         }
 
-        binding.lvToDo.setOnItemLongClickListener { parent, view, position, id ->
-            deleteTodo(position)
-            true // возвращаем true, чтобы показать что событие обработано
+        todoAdapter.setOnDeleteClickListener { todo ->
+            todoAdapter.removeTodo(todo)
+        }
+
+    }
+
+    private fun setupClickListeners() {
+        binding.btnAdd.setOnClickListener {
+            addNewTodo()
+        }
+        binding.etToDo.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
+                addNewTodo()
+                true
+            } else {
+                false
+            }
         }
     }
 
-    private fun addToDo() {
-        val text = binding.etToDo.text.toString().trim()
-        if (text.isNotEmpty()) {
-            todos.add(text)
-            adapter.notifyDataSetChanged()
+    private fun addNewTodo() {
+        val todoText = binding.etToDo.text.toString().trim()
+
+        if (todoText.isNotEmpty()) {
+            val newTodo = Todo(title = todoText)
+            todoAdapter.addTodo(newTodo)
+
             binding.etToDo.text.clear()
         }
     }
 
-    private fun deleteTodo(position: Int) {
-        if (position >= 0 && position < todos.size) {
-            val deletedTodo = todos.removeAt(position)
-            adapter.notifyDataSetChanged()
-            Toast.makeText(this, "Удалено: $deletedTodo", Toast.LENGTH_SHORT).show()
-        }
-    }
+
+
 }
